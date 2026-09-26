@@ -1,4 +1,4 @@
-import { validate, blobDocument } from './model.js';
+import { validate, blobDocument, slideStep } from './model.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
@@ -183,8 +183,9 @@ document.addEventListener('keydown', event => {
     slide().elements = slide().elements.filter(item => item.id !== selectedId);
     selectedId = null; event.preventDefault(); changed();
   }
-  if (event.key === 'PageDown' || event.key === 'PageUp') {
-    event.preventDefault(); showSlide(slideIndex + (event.key === 'PageDown' ? 1 : -1));
+  const step = slideStep(event);
+  if (step && deck) {
+    event.preventDefault(); showSlide(slideIndex + step);
   }
 });
 $('toggle-code').onclick = () => {
@@ -210,7 +211,9 @@ $('apply-code').onclick = apply;
 window.addEventListener('message', event => {
   const iframe = [...$('frame').querySelectorAll('.blob iframe')].find(node => node.contentWindow === event.source);
   if (!iframe) return;
-  if (event.data?.type === 'hyper-estatico:select') {
+  if (event.data?.type === 'hyper-estatico:navigate' && [1, -1].includes(event.data.step)) {
+    showSlide(slideIndex + event.data.step);
+  } else if (event.data?.type === 'hyper-estatico:select') {
     selectedId = iframe.parentElement.dataset.id === '$background' ? null : iframe.parentElement.dataset.id;
     selection();
   } else if (event.data?.type === 'hyper-estatico:text' && typeof event.data.html === 'string') {

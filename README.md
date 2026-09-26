@@ -4,7 +4,7 @@ Un editor mínimo para presentaciones hechas con HTML. Cada slide tiene tres pie
 
 Necesitas Node.js 22 o posterior. Ejecuta `npm start` y abre [http://localhost:4317](http://localhost:4317).
 
-El botón **Código** abre el JSON de toda la presentación. `PageUp` y `PageDown` cambian de slide; el contador indica cuál se ve. Para mover un elemento, selecciónalo y arrastra el pequeño control en su borde. Sus ocho puntos cambian el tamaño. `Ctrl/Cmd+C` y `Ctrl/Cmd+V` duplican el elemento seleccionado; `Delete` lo elimina. Puedes arrastrar archivos de imagen al lienzo para añadirlos. Se guardan en `assets/images/` y el documento conserva una URL estable. El editor impide que un elemento quede fuera de su frame.
+El botón **Código** abre el JSON de toda la presentación. `↓`, `→` y `Espacio` avanzan; `↑` y `←` retroceden. También funcionan `PageDown` y `PageUp`. Los atajos respetan la edición de texto y los controles interactivos; el contador indica el slide actual. Para mover un elemento, selecciónalo y arrastra el pequeño control en su borde. Sus ocho puntos cambian el tamaño. `Ctrl/Cmd+C` y `Ctrl/Cmd+V` duplican el elemento seleccionado; `Delete` lo elimina. Puedes arrastrar archivos de imagen al lienzo para añadirlos. Se guardan en `assets/images/` y el documento conserva una URL estable. El editor impide que un elemento quede fuera de su frame.
 
 El texto con `contenteditable="true"` se edita directamente con un clic y se guarda automáticamente. Ejemplo de un bloque:
 

@@ -34,8 +34,18 @@ export function migrateDocument(document) {
   return validate({ ...metadata, version: 2, slides: [{ id: 'slide-1', frame, background, elements }] });
 }
 
+export function slideStep(event) {
+  if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return 0;
+  const target = event.target;
+  if (target?.isContentEditable || target?.closest?.('input,textarea,select,button,a[href],[role="textbox"],[role="slider"],[role="combobox"]')) return 0;
+  if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(event.key)) return 1;
+  if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(event.key)) return -1;
+  return 0;
+}
+
 export function blobDocument(html) {
-  const defaults = '<meta data-he-runtime charset="utf-8"><meta data-he-runtime name="viewport" content="width=device-width,initial-scale=1"><style data-he-runtime>html,body{margin:0;width:100%;height:100%}*{box-sizing:border-box}body{overflow:hidden}</style><script data-he-runtime>addEventListener("pointerdown",()=>parent.postMessage({type:"hyper-estatico:select"},"*"));addEventListener("input",e=>{if(!e.target.isContentEditable)return;const clone=document.documentElement.cloneNode(true);clone.querySelectorAll("[data-he-runtime]").forEach(n=>n.remove());parent.postMessage({type:"hyper-estatico:text",html:"<!doctype html>"+clone.outerHTML},"*")});addEventListener("dragover",e=>{e.preventDefault();parent.postMessage({type:"hyper-estatico:dragover"},"*")});addEventListener("drop",e=>{e.preventDefault();parent.postMessage({type:"hyper-estatico:drop",x:e.clientX,y:e.clientY,files:[...e.dataTransfer.files],html:e.dataTransfer.getData("text/html"),uri:e.dataTransfer.getData("text/uri-list")},"*")});</script>';
+  const navigation = `<script data-he-runtime>(()=>{const slideStep=${slideStep.toString()};addEventListener("keydown",event=>{const step=slideStep(event);if(step){event.preventDefault();parent.postMessage({type:"hyper-estatico:navigate",step},"*")}});})();</script>`;
+  const defaults = navigation + '<meta data-he-runtime charset="utf-8"><meta data-he-runtime name="viewport" content="width=device-width,initial-scale=1"><style data-he-runtime>html,body{margin:0;width:100%;height:100%}*{box-sizing:border-box}body{overflow:hidden}</style><script data-he-runtime>addEventListener("pointerdown",()=>parent.postMessage({type:"hyper-estatico:select"},"*"));addEventListener("input",e=>{if(!e.target.isContentEditable)return;const clone=document.documentElement.cloneNode(true);clone.querySelectorAll("[data-he-runtime]").forEach(n=>n.remove());parent.postMessage({type:"hyper-estatico:text",html:"<!doctype html>"+clone.outerHTML},"*")});addEventListener("dragover",e=>{e.preventDefault();parent.postMessage({type:"hyper-estatico:dragover"},"*")});addEventListener("drop",e=>{e.preventDefault();parent.postMessage({type:"hyper-estatico:drop",x:e.clientX,y:e.clientY,files:[...e.dataTransfer.files],html:e.dataTransfer.getData("text/html"),uri:e.dataTransfer.getData("text/uri-list")},"*")});</script>';
   if (/<html[\s>]/i.test(html)) {
     return /<head[\s>]/i.test(html)
       ? html.replace(/<head([^>]*)>/i, `<head$1>${defaults}`)
