@@ -61,6 +61,27 @@ test('agent can inspect one slide, import an image, and save its HTML without to
   assert.deepEqual(persisted.slides[0], seed.slides[0]);
   assert.deepEqual(persisted.slides[1], edited.slide);
 });
+test('SVG declarations import unchanged through upload and CLI and share one asset', async () => {
+  const svg = Buffer.from('\uFEFF<?xml version="1.0" encoding="UTF-8"?>\n<!-- Exported logo -->\n<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n<!-- Drawing -->\n<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40"><rect width="80" height="40" fill="green"/></svg>');
+  const upload = await fetch(`http://127.0.0.1:${port}/api/assets?name=original.svg`, { method: 'POST', body: svg });
+  assert.equal(upload.status, 201);
+  const { asset } = await upload.json();
+  assert.equal(asset.mimeType, 'image/svg+xml');
+  assert.deepEqual(await readFile(join(directory, 'assets', 'images', `${asset.id}.svg`)), svg);
+  const input = join(directory, 'original.svg');
+  await writeFile(input, svg);
+  const child = spawn(process.execPath, ['assets.mjs', 'add', input], { cwd: new URL('..', import.meta.url), env: { ...process.env, ASSET_DIR: join(directory, 'assets') }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = '', errors = '';
+  child.stdout.on('data', chunk => output += chunk);
+  child.stderr.on('data', chunk => errors += chunk);
+  assert.equal((await once(child, 'exit'))[0], 0, errors);
+  assert.equal(JSON.parse(output).assets[0].id, asset.id);
+  const listing = await (await fetch(`http://127.0.0.1:${port}/api/assets`)).json();
+  assert.equal(listing.assets.filter(item => item.id === asset.id).length, 1);
+  const served = await fetch(`http://127.0.0.1:${port}${asset.url}`);
+  assert.deepEqual(Buffer.from(await served.arrayBuffer()), svg);
+  assert.match(served.headers.get('content-security-policy'), /default-src 'none'/);
+});
 test('stale save cannot overwrite an external agent edit or place an element outside the slide', async () => {
   const editor = await read();
   const outside = structuredClone(editor.document);

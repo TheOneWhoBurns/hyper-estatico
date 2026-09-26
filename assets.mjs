@@ -22,8 +22,13 @@ function format(bytes) {
   if (ascii.startsWith('wOF2')) return 'woff2';
   if (ascii.startsWith('OTTO')) return 'otf';
   if (start.subarray(0, 4).equals(Buffer.from([0, 1, 0, 0])) || ascii.startsWith('true')) return 'ttf';
-  const xml = bytes.subarray(0, 8192).toString('utf8').trimStart();
-  if (/^(?:<\?xml[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*<svg(?:\s|>)/i.test(xml)) return 'svg';
+  let xml = bytes.subarray(0, 8192).toString('utf8').trimStart();
+  // Sniff past XML declarations, comments and SVG doctypes without parsing a DTD
+  // or fetching its URL. The original bytes are stored unchanged.
+  const prolog = /^(?:<\?xml\b[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE\s+svg\b(?:[^>"'\[]|"[^"]*"|'[^']*')*(?:\[(?:[^\]"']|"[^"]*"|'[^']*')*\]\s*)?>)\s*/i;
+  let prefix;
+  while ((prefix = xml.match(prolog))) xml = xml.slice(prefix[0].length);
+  if (/^<svg(?:\s|\/?>)/i.test(xml)) return 'svg';
   throw new Error('Formato no compatible. Usa PNG, JPEG, GIF, WebP, AVIF, SVG, WOFF, WOFF2, TTF u OTF.');
 }
 export async function addAsset(bytes, originalName) {
