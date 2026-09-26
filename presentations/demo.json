@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "slides": [
+    {
+      "id": "slide-1",
+      "frame": {
+        "width": 1280,
+        "height": 960
+      },
+      "background": "<style>\nhtml, body {\n  margin: 0;\n  width: 100%;\n  height: 100%;\n}\nbody {\n  background: #f7f4ec;\n}\n</style>",
+      "elements": [
+        {
+          "id": "headline",
+          "name": "Titular",
+          "x": 493,
+          "y": 210,
+          "width": 195,
+          "height": 616,
+          "html": "<style>\nhtml, body {\n  margin: 0;\n  width: 100%;\n  height: 100%;\n}\nbody {\n  display: flex;\n  align-items: center;\n  overflow: hidden;\n}\nh1 {\n  margin: 0;\n  color: #252421;\n  font: normal clamp(62px, 8.3vw, 104px)/1.1 Georgia, serif;\n  letter-spacing: -0.065em;\n  white-space: nowrap;\n}\nem {\n  color: #d65b39;\n  font-weight: normal;\n}\n</style>\n<h1 contenteditable=\"true\">HTML, <em>sin moldes.</em></h1>"
+        },
+        {
+          "id": "bdfbb340-5de8-4bf3-89dc-413f3e08a2e6",
+          "name": "Elemento",
+          "x": 22,
+          "y": 305,
+          "width": 400,
+          "height": 200,
+          "html": "<style>\nbody { display:grid; place-items:center; font:40px Georgia; }\n</style>\n<div contenteditable=\"true\">Tu HTML aquí.</div>"
+        }
+      ]
+    }
+  ]
+}

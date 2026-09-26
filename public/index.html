@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fcfcfa">
+  <meta name="description" content="Un lienzo para crear presentaciones con HTML libre.">
+  <title>hyper-estatico</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand">hyper<span>-</span>estatico</div>
+    <span id="slide-status" class="slide-status" title="PageUp / PageDown para cambiar de slide" aria-live="polite">1 / 1</span>
+    <div class="toolbar-actions">
+      <button id="toggle-code" type="button" aria-controls="code-panel" aria-expanded="false">Código</button>
+      <span id="save-status" role="status" aria-live="polite">Guardado</span>
+    </div>
+  </header>
+
+  <div class="editor-layout">
+    <main id="workspace" class="workspace" aria-label="Lienzo de la presentación">
+      <div id="stage" class="stage">
+        <div id="frame" class="frame">
+          <div id="selection" class="selection" hidden>
+            <span class="move-handle" data-direction="move" title="Arrastrar elemento"></span>
+            <span class="handle" data-direction="nw"></span>
+            <span class="handle" data-direction="n"></span>
+            <span class="handle" data-direction="ne"></span>
+            <span class="handle" data-direction="e"></span>
+            <span class="handle" data-direction="se"></span>
+            <span class="handle" data-direction="s"></span>
+            <span class="handle" data-direction="sw"></span>
+            <span class="handle" data-direction="w"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <aside id="code-panel" class="code-panel" aria-label="Editor de código" hidden>
+      <div class="code-panel-header">
+        <h1 id="code-heading">Documento · JSON</h1>
+        <button id="close-code" type="button" aria-label="Cerrar código" title="Cerrar código">×</button>
+      </div>
+      <textarea id="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="JSON del documento"></textarea>
+      <div class="code-panel-actions">
+        <button id="apply-code" class="apply-button" type="button">Aplicar</button>
+      </div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
