@@ -6,6 +6,8 @@ Necesitas Node.js 22 o posterior. Ejecuta `npm start` y abre [http://localhost:4
 
 El botón **Código** abre el JSON de toda la presentación. `↓`, `→` y `Espacio` avanzan; `↑` y `←` retroceden. También funcionan `PageDown` y `PageUp`. Los atajos respetan la edición de texto y los controles interactivos; el contador indica el slide actual. Para mover un elemento, selecciónalo y arrastra el pequeño control en su borde. Sus ocho puntos cambian el tamaño. `Ctrl/Cmd+C` y `Ctrl/Cmd+V` duplican el elemento seleccionado; `Delete` lo elimina. Puedes arrastrar archivos de imagen al lienzo para añadirlos. Se guardan en `assets/images/` y el documento conserva una URL estable. El editor impide que un elemento quede fuera de su frame.
 
+`Ctrl/Cmd+Z` deshace los cambios de la sesión, incluidos movimientos, tamaños, borrados, duplicados, imágenes y código aplicado. Mientras escribes texto o JSON, conserva el deshacer nativo. El historial se reinicia al recargar o recibir cambios externos del agente.
+
 El texto con `contenteditable="true"` se edita directamente con un clic y se guarda automáticamente. Ejemplo de un bloque:
 
 ```html

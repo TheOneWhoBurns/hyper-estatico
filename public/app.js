@@ -1,4 +1,4 @@
-import { validate, blobDocument, slideStep } from './model.js';
+import { validate, blobDocument, slideStep, undoShortcut } from './model.js';
 
 const $ = id => document.getElementById(id);
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
@@ -8,6 +8,37 @@ const element = () => slide().elements.find(el => el.id === selectedId);
 let deck, revision, slideIndex = 0, selectedId = null, scale = 1, gesture = null;
 let dirty = false, saving = false, draft = false, blocked = false, remotePending = false;
 let toastTimer;
+const undoStack = [];
+let checkpoint, textGroup = null;
+
+function resetUndo() {
+  undoStack.length = 0;
+  checkpoint = JSON.stringify(deck);
+  textGroup = null;
+}
+function rememberChange(group, slideId) {
+  const next = JSON.stringify(deck), now = performance.now();
+  if (next === checkpoint) return;
+  if (!group || textGroup?.key !== group || now - textGroup.time > 750) {
+    undoStack.push({ document: checkpoint, slideId });
+    if (undoStack.length > 50) undoStack.shift();
+  }
+  checkpoint = next;
+  textGroup = group ? { key: group, time: now } : null;
+}
+function undo() {
+  if (!deck || gesture || blocked || !apply()) return;
+  const previous = undoStack.pop();
+  if (!previous) return;
+  deck = JSON.parse(previous.document);
+  checkpoint = previous.document;
+  textGroup = null;
+  slideIndex = Math.max(0, deck.slides.findIndex(item => item.id === previous.slideId));
+  selectedId = null;
+  $('frame').querySelectorAll('.blob').forEach(node => node.remove());
+  updateSlideUrl();
+  changed({ remember: false });
+}
 
 function toast(message) {
   $('toast').textContent = message;
@@ -76,7 +107,8 @@ function render() {
   $('slide-status').textContent = `${slideIndex + 1} / ${deck.slides.length}`;
   selection(); fit(); status();
 }
-function changed({ repaint = true } = {}) {
+function changed({ repaint = true, remember = true, group, slideId = slide().id } = {}) {
+  if (remember) rememberChange(group, slideId);
   dirty = true;
   if (repaint) render();
   code();
@@ -106,7 +138,7 @@ function apply() {
     selectedId = null;
     draft = false;
     $('frame').querySelectorAll('.blob').forEach(node => node.remove());
-    changed();
+    changed({ slideId: oldId });
     return true;
   } catch (error) {
     toast(error.message);
@@ -117,11 +149,15 @@ function showSlide(index) {
   if (index < 0 || index >= deck.slides.length || !apply()) return;
   slideIndex = index;
   selectedId = null;
+  textGroup = null;
   $('frame').querySelectorAll('.blob').forEach(node => node.remove());
-  const url = new URL(location.href);
-  url.searchParams.set('slide', String(index + 1));
-  history.replaceState(null, '', url);
+  updateSlideUrl();
   render();
+}
+function updateSlideUrl() {
+  const url = new URL(location.href);
+  url.searchParams.set('slide', String(slideIndex + 1));
+  history.replaceState(null, '', url);
 }
 function begin(event, id, direction) {
   if (!apply()) return;
@@ -130,7 +166,7 @@ function begin(event, id, direction) {
   gesture = { pointer: event.pointerId, x: event.clientX, y: event.clientY, scale, direction, start: copy(element()) };
   event.currentTarget.setPointerCapture(event.pointerId);
 }
-$('selection').querySelectorAll('.handle').forEach(handle => handle.addEventListener('pointerdown', event => begin(event, selectedId, handle.dataset.direction)));
+$('selection').querySelectorAll('[data-direction]').forEach(handle => handle.addEventListener('pointerdown', event => begin(event, selectedId, handle.dataset.direction)));
 document.addEventListener('pointermove', event => {
   if (!gesture || event.pointerId !== gesture.pointer) return;
   const g = gesture, el = element(), s = g.start, frame = slide().frame;
@@ -176,6 +212,7 @@ document.addEventListener('paste', event => {
   slide().elements.push(item); selectedId = item.id; event.preventDefault(); changed();
 });
 document.addEventListener('keydown', event => {
+  if (undoShortcut(event)) { event.preventDefault(); undo(); return; }
   if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); apply(); return; }
   if (textTarget(event.target)) return;
   if ((event.key === 'Delete' || event.key === 'Backspace') && element()) {
@@ -211,7 +248,9 @@ $('apply-code').onclick = apply;
 window.addEventListener('message', event => {
   const iframe = [...$('frame').querySelectorAll('.blob iframe')].find(node => node.contentWindow === event.source);
   if (!iframe) return;
-  if (event.data?.type === 'hyper-estatico:navigate' && [1, -1].includes(event.data.step)) {
+  if (event.data?.type === 'hyper-estatico:undo') {
+    undo();
+  } else if (event.data?.type === 'hyper-estatico:navigate' && [1, -1].includes(event.data.step)) {
     showSlide(slideIndex + event.data.step);
   } else if (event.data?.type === 'hyper-estatico:select') {
     selectedId = iframe.parentElement.dataset.id === '$background' ? null : iframe.parentElement.dataset.id;
@@ -225,7 +264,7 @@ window.addEventListener('message', event => {
       item.html = event.data.html;
     }
     iframe.dataset.source = event.data.html;
-    changed({ repaint: false });
+    changed({ repaint: false, group: `${slide().id}:${id}` });
   } else if (event.data?.type === 'hyper-estatico:dragover') {
     document.body.classList.add('dragging-image');
   } else if (event.data?.type === 'hyper-estatico:drop') {
@@ -303,6 +342,7 @@ async function checkRemote() {
     if (dirty || draft) { blocked = true; status(); toast('El archivo cambió. Conserva tu código pendiente antes de recargar.'); return; }
     const oldId = slide().id;
     deck = validate(state.document);
+    resetUndo();
     revision = state.revision;
     slideIndex = Math.max(0, deck.slides.findIndex(item => item.id === oldId));
     selectedId = null;
@@ -316,6 +356,7 @@ try {
   const response = await fetch('/api/document'), state = await response.json();
   if (!response.ok) throw new Error(state.error);
   deck = validate(state.document); revision = state.revision;
+  resetUndo();
   slideIndex = clamp(Number(new URL(location.href).searchParams.get('slide') || 1) - 1 || 0, 0, deck.slides.length - 1);
   render(); code();
   new EventSource('/api/events').onmessage = checkRemote;
